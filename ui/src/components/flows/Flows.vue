@@ -68,12 +68,19 @@
                         />
                     </el-form-item>
                     <el-form-item>
+                        <el-switch
+                            :model-value="showChart"
+                            @update:model-value="onShowChartChange"
+                            :active-text="$t('show chart')"
+                        />
+                    </el-form-item>
+                    <el-form-item>
                         <filters :storage-key="storageKeys.FLOWS_FILTERS" />
                     </el-form-item>
                 </template>
 
                 <template #top>
-                    <el-card v-if="daily" shadow="never" class="mb-4">
+                    <el-card v-if="showStatChart()" shadow="never" class="mb-4">
                         <ExecutionsBar :data="daily" :total="executionsCount" />
                     </el-card>
                 </template>
@@ -282,6 +289,7 @@
                 lastExecutionByFlowReady: false,
                 dailyReady: false,
                 file: undefined,
+                showChart: ["true", null].includes(localStorage.getItem(storageKeys.SHOW_FLOWS_CHART))
             };
         },
         computed: {
@@ -333,6 +341,17 @@
                     id: element.id,
                     namespace: element.namespace,
                     enabled: !element.disabled
+                }
+            },
+            showStatChart() {
+                return this.daily && this.showChart;
+            },
+            onShowChartChange(value) {
+                this.showChart = value;
+                localStorage.setItem(storageKeys.SHOW_FLOWS_CHART, value);
+
+                if (this.showStatChart) {
+                    this.loadStats();
                 }
             },
             exportFlows() {
@@ -492,20 +511,21 @@
 
                 return _merge(base, queryFilter)
             },
-            loadData(callback) {
+            loadStats() {
                 this.dailyReady = false;
-
-                if (this.user.hasAny(permission.EXECUTION)) {
-                    this.$store
-                        .dispatch("stat/daily", this.loadQuery({
-                            startDate: this.$moment(this.startDate).add(-1, "day").startOf("day").toISOString(true),
-                            endDate: this.$moment(this.endDate).endOf("day").toISOString(true)
-                        }))
-                        .then(() => {
-                            this.dailyReady = true;
-                        });
+                this.$store
+                    .dispatch("stat/daily", this.loadQuery({
+                        startDate: this.$moment(this.startDate).add(-1, "day").startOf("day").toISOString(true),
+                        endDate: this.$moment(this.endDate).endOf("day").toISOString(true)
+                    }, true))
+                    .then(() => {
+                        this.dailyReady = true;
+                    });
+            },
+            loadData(callback) {
+                if (this.user.hasAny(permission.EXECUTION) && this.showStatChart) {
+                    this.loadStats();
                 }
-
                 this.$store
                     .dispatch("flow/findFlows", this.loadQuery({
                         size: parseInt(this.$route.query.size || 25),

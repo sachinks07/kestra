@@ -56,7 +56,7 @@
                                         {{ $t('download') }}
                                     </a>
                                     <FilePreview :value="item.logFile" :execution-id="followedExecution.id" />
-                                    <el-button disabled size="small" type="primary" v-if="logFileSizeByPath[item.logFile]">
+                                    <el-button disabled size="small" type="primary">
                                         ({{ logFileSizeByPath[item.logFile] }})
                                     </el-button>
                                 </el-button-group>
@@ -69,7 +69,7 @@
                                     :level="level"
                                     :log="item"
                                     :exclude-metas="excludeMetas"
-                                    v-else-if="filter === '' || item.message?.toLowerCase().includes(filter)"
+                                    v-if="filter === '' || item.message?.toLowerCase().includes(filter)"
                                 />
                                 <TaskRunDetails
                                     v-if="!taskRunId && isSubflow(currentTaskRun) && shouldDisplaySubflow(index, currentTaskRun) && currentTaskRun.outputs?.executionId"
