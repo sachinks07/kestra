@@ -1,5 +1,5 @@
 <template>
-    <top-nav-bar :title="routeInfo.title">
+    <top-nav-bar v-if="topbar" :title="routeInfo.title">
         <template #additional-right>
             <ul>
                 <li>
@@ -36,7 +36,7 @@
             </ul>
         </template>
     </top-nav-bar>
-    <section data-component="FILENAME_PLACEHOLDER" class="container" v-if="ready">
+    <section data-component="FILENAME_PLACEHOLDER" :class="{'container': topbar}" v-if="ready">
         <div>
             <data-table
                 @page-changed="onPageChanged"
@@ -49,8 +49,9 @@
                     </el-form-item>
                     <el-form-item>
                         <namespace-select
+                            :value="selectedNamespace"
                             data-type="flow"
-                            :value="$route.query.namespace"
+                            :disabled="!!namespace"
                             @update:model-value="onDataTableValue('namespace', $event)"
                         />
                     </el-form-item>
@@ -280,6 +281,17 @@
             TopNavBar,
             ExecutionsBar
         },
+        props: {
+            topbar: {
+                type: Boolean,
+                default: true
+            },
+            namespace: {
+                type: String,
+                required: false,
+                default: undefined
+            },
+        },
         data() {
             return {
                 isDefaultNamespaceAllow: true,
@@ -289,7 +301,7 @@
                 lastExecutionByFlowReady: false,
                 dailyReady: false,
                 file: undefined,
-                showChart: ["true", null].includes(localStorage.getItem(storageKeys.SHOW_FLOWS_CHART))
+                showChart: ["true", null].includes(localStorage.getItem(storageKeys.SHOW_FLOWS_CHART)),
             };
         },
         computed: {
@@ -329,19 +341,22 @@
                     return a + Object.values(b.executionCounts).reduce((a, b) => a + b, 0);
                 }, 0);
             },
-        },
-        beforeRouteEnter(to, from, next) {
-            const defaultNamespace = localStorage.getItem(storageKeys.DEFAULT_NAMESPACE);
-            const query = {...to.query};
-            if (defaultNamespace) {
-                query.namespace = defaultNamespace; 
-            } if (!query.scope) {
-                query.scope = ["USER"];
+            selectedNamespace(){
+                return this.namespace !== null && this.namespace !== undefined ? this.namespace : this.$route.query.namespace;
             }
-            next(vm => {
-                vm.$router?.replace({query});
-            });
         },
+        // beforeRouteEnter(to, from, next) {
+        //     const defaultNamespace = localStorage.getItem(storageKeys.DEFAULT_NAMESPACE);
+        //     const query = {...to.query};
+        //     if (defaultNamespace) {
+        //         query.namespace = defaultNamespace; 
+        //     } if (!query.scope) {
+        //         query.scope = ["USER"];
+        //     }
+        //     next(vm => {
+        //         vm.$router?.replace({query});
+        //     });
+        // },
         methods: {
             selectionMapper(element) {
                 return {
@@ -356,7 +371,8 @@
             onShowChartChange(value) {
                 this.showChart = value;
                 localStorage.setItem(storageKeys.SHOW_FLOWS_CHART, value);
-                this.loadStats();
+                if(this.showStatChart())
+                    this.loadStats();
             },
             exportFlows() {
                 this.$toast().confirm(
