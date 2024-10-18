@@ -24,8 +24,7 @@
             v-for="(namespace, index) in hierarchy(namespaces)"
             :key="index"
             :span="24"
-            class="my-1 py-2 px-4 namespaces"
-            :class="{system: namespace.id === 'system'}"
+            class="my-1 py-2 px-4 namespaces system"
         >
             <el-tree :data="[namespace]" default-expand-all :props="{class: 'tree'}" class="h-auto">
                 <template #default="{data}">
